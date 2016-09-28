@@ -1,0 +1,19 @@
+{
+  "name": "wilddog-video-conversations",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dongkai1993/wdVideo-conversation.git"
+  },
+  "author": "dongkai",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dongkai1993/wdVideo-conversation/issues"
+  },
+  "homepage": "https://github.com/dongkai1993/wdVideo-conversation#readme"
+}
