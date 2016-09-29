@@ -41,7 +41,7 @@
         </div>
     </div>
     <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/2.0.0/wilddog.js'></script>
-    <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/0.3.1/wilddog-video.js'></script>
+    <script type="text/javascript" src='./wilddog-video.js'></script>
     <script type="text/javascript">
 	/*
      * demo设计思路总览：
@@ -161,8 +161,8 @@
             auth = user;
 
             //SDK之外保存的一个在线用户列表，匿名成功之后写入列表，列表中的用户均是可邀请和可被邀请的用户，如用户发出邀请或接受邀请后都需在列表中将自己暂时删除，结束会话后再写入用户列表
-            wilddogref.child('users/' + user.uid).set(true);
-            wilddogref.child('users/' + user.uid).onDisconnect().remove();
+            wilddogref.parent().child('users/' + user.uid).set(true);
+            wilddogref.parent().child('users/' + user.uid).onDisconnect().remove();
 
             //Client初始化操作，执行必须在匿名登录之后进行，client的其他函数必须在init成功后才可调用
             clientInstance.init({
@@ -183,7 +183,7 @@
             });
 
             //监听在线用户列表
-            wilddogref.child('users').on('child_added', (snap) => {
+            wilddogref.parent().child('users').on('child_added', (snap) => {
                 if (snap.key() != user.uid) {
                     var newUser = userModel.cloneNode(true);
                     newUser.id = snap.key();
@@ -193,7 +193,7 @@
                 }
             });
 
-            wilddogref.child('users').on('child_removed', (snap) => {
+            wilddogref.parent().child('users').on('child_removed', (snap) => {
                 if (snap.key() != user.uid) {
                     var removeEl = document.getElementById(snap.key());
                     userList.removeChild(removeEl);
@@ -219,7 +219,7 @@
             // userDiv.hidden = true;
 
             //在线用户列表只保存也被邀请和可邀请他人的用户，因此接受邀请后即在用户列表中将自己删除，防止其他用户再邀请
-            wilddogref.child('users/' + auth.uid).remove();
+            wilddogref.parent().child('users/' + auth.uid).remove();
 
             //监听新参与者加入conversation
             conversation.on('participant_connected', (participant) => {
@@ -253,6 +253,7 @@
         //如果尚未加入任何Conversation，则调用client.inviteToConversation
         //已经加入了一个Conversation，则调用conversation.invite
         if (!currentConversation) {
+            console.log('inviteToConversation');
             outInvite = clientInstance.inviteToConversation({
                 'mode': 'server_based',
                 'participantId': uid,
@@ -285,7 +286,7 @@
 
             //监听被邀请者的接受邀请的事件
             outInvite.on('accepted', () => {
-                wilddogref.child('users/' + auth.uid).remove();
+                wilddogref.parent().child('users/' + auth.uid).remove();
                 hangupEl.hidden = false;
                 // userDiv.hidden = true;
             })
@@ -297,6 +298,7 @@
                 // userDiv.hidden = false;
             })
         } else {
+            console.log('conversation.invite');
             currentConversation.invite(uid);
         }
     }
@@ -306,10 +308,13 @@
         if (currentConversation) {
             //Conversation提供了disconnect函数用于主动离开conversation
             currentConversation.disconnect();
+            for (var i = videoList.children.length - 1; i >= 2; i--) {
+                videoList.removeChild(videoList.children[i]);
+            }
             hangup.hidden = true;
             currentConversation = null;
             // userDiv.hidden = false;
-            wilddogref.child('users/' + auth.uid).set(true);
+            wilddogref.parent().child('users/' + auth.uid).set(true);
         }
     }
     </script>
