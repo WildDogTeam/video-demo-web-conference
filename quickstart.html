@@ -227,7 +227,7 @@
                 newRemote.id = participant.participantId;
                 newRemote.hidden = false;
                 videoList.appendChild(newRemote);
-                participant.stream.attach(remote);
+                participant.stream.attach(newRemote);
             });
             //监听会话参与者的断开事件
             conversation.on('participant_disconnected', (participant) => {
@@ -270,7 +270,7 @@
                     newRemote.id = participant.participantId;
                     newRemote.hidden = false;
                     videoList.appendChild(newRemote);
-                    participant.stream.attach(remote);
+                    participant.stream.attach(newRemote);
                 });
 
                 //监听参与者离开conversation
