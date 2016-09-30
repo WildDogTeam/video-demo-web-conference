@@ -139,8 +139,10 @@
         };
 
         wilddog.initializeApp(config);
+        //定义wilddog.video交互路径
         wilddogref = wilddog.sync().ref();
-        usersRef = wilddog.sync().ref().parent().child('用户列表存储路径');
+        //定义quickstart使用的用户列表存储路径
+        usersRef = wilddog.sync().ref().parent().child('userList');
         //野狗匿名登录
         wilddog.auth().signInAnonymously().then((user) => {
             //获取本地媒体流，并绑定到页面
