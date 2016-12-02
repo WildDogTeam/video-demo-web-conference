@@ -1,0 +1,106 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>video-chat-room</title>
+</head>
+
+<body style="background:#333;color:#fff;text-align: center;">
+    <div style="text-align:center;font-size:50px;margin-top:50px;">video conference demo</div>
+    <div id="getAppid-div" style="text-align:center;margin-top:150px;">
+        <input id="appId" type="" style="width:200px;height:35px;" name="" placeholder='请输入appId'>
+        <button id="login" onclick="login()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer">匿名登录</button>
+        <input id="roomId" type="" style="width:200px;height:35px;" name="" placeholder='请输入房间号'>
+        <button id="join" onclick="join()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer" disabled="true">进入</button>
+    </div>
+    <div id="videos" style="text-align:center;margin:0px auto;margin-top:60px;width:1080px" hidden="">
+        <video id="local" style="border:1px solid;width:480px;height:360px;margin-right:20px;margin-left:20px;margin-top:20px;" muted="" autoplay=""></video>
+        <video id="remote" style="border:1px solid;width:480px;height:360px;margin-right:20px;margin-left:20px;margin-top:20px;" autoplay="" hidden></video>
+    </div>
+    <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/2.3.8/wilddog.js'></script>
+    <!-- <script type="text/javascript" src='./lib/wilddog.js'></script> -->
+    <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/0.5.0/wilddog-video.js'></script>
+    <script type="text/javascript">
+    //获取所使用到的所有元素
+    var roomIdEl = document.getElementById('roomId');
+    var videosEl = document.getElementById('videos');
+    var localEl = document.getElementById('local');
+    var remoteEl = document.getElementById('remote');
+    var loginDiv = document.getElementById('getAppid-div');
+    var appidEl = document.getElementById('appId');
+    var joinBtn = document.getElementById('join');
+    var localStream = null;
+    var roomId = null;
+    var currentConference = null;
+    //获取Client对象
+    var clientInstance = null;
+    var login = function functionName() {
+
+        var config = {
+            authDomain: appidEl.value + '.wilddog.com',
+            syncURL: "https://" + appidEl.value + ".wilddogio.com"
+        };
+        wilddog.initializeApp(config);
+        //获取Video对象
+        var videoInstance = wilddog.video();
+        wilddog.auth().signInAnonymously()
+            .then(function(user) {
+                videoInstance.createStream({
+                        audio: true,
+                        video: 'low'
+                    })
+                    .then(function(wdStream) {
+                        localStream = wdStream;
+                        localStream.attach(localEl);
+                    })
+                    .catch(function(err) {
+                        console.error(err);
+                    });
+                clientInstance = videoInstance.client();
+                alert('登录成功！请输入房间号加入视频会议！');
+                joinBtn.disabled = false;
+            })
+            .catch(function(err) {
+                console.log(err);
+                alert('登录失败！请检查appId是否正确并开启匿名登录功能！')
+                console.error('请检查appId是否正确并开启匿名登录功能！');
+            })
+    }
+        //加入房间
+    var join = function() {
+        //拿到房间号
+        roomId = roomIdEl.value;
+        //wilddog.video.client.init()需要传入wilddog.ref和wilddog.user，因此需监听wilddog.auth的状态
+        wilddog.auth().onAuthStateChanged(function(user) {
+            //如果user为null,不作任何操作，等待匿名登录成功后再进行
+            if (clientInstance == null) {
+                return;
+            }
+            //匿名登录成功了
+            loginDiv.hidden = true;
+            videosEl.hidden = false;
+            //Client初始化操作，执行必须在匿名登录之后进行，client的其他函数必须在init成功后才可调用
+            currentConference = clientInstance.connectToConference(roomId, {
+                stream: localStream
+            });
+            currentConference.on('participant_connected', function(participant) {
+                var newRemote = remoteEl.cloneNode(true);
+                newRemote.id = participant.Id;
+                newRemote.hidden = false;
+                videosEl.appendChild(newRemote);
+                participant.on('streamAdded', function(remoteStream) {
+                    remoteStream.attach(newRemote);
+                })
+            });
+            currentConference.on('participant_disconnected', function(participant) {
+                var removeEl = document.getElementById(participant.Id);
+                if (participant.stream)
+                    participant.stream.detach(removeEl);
+                videosEl.removeChild(removeEl);
+            })
+        })
+    }
+    </script>
+</body>
+
+</html>
