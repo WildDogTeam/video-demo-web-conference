@@ -14,12 +14,19 @@
         <button id="join" onclick="join()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer" disabled="true">进入</button>
     </div>
     <div id="videos" style="text-align:center;margin:0px auto;margin-top:60px;width:1080px" hidden="">
+        <div>
+            <input id="pId" type="" style="width:200px;height:35px;" name="" placeholder='请输入直播者ID'>
+            <button id="start" onclick="start()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer">开启直播</button>
+            <button id="switch" onclick="switchParticipant()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer">切换直播</button>
+            <button id="stop" onclick="stop()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer">结束直播</button>
+        </div>
         <video id="local" width=480px height=360px style="border:1px solid;margin-right:20px;margin-left:20px;margin-top:20px;" muted="" autoplay=""></video>
         <video id="remote" width=480px height=360px style="border:1px solid;margin-right:20px;margin-left:20px;margin-top:20px;" autoplay="" hidden></video>
     </div>
-    <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/2.3.9/wilddog.js'></script>
-    <!-- <script type="text/javascript" src='./lib/wilddog.js'></script> -->
-    <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/0.5.4/wilddog-video.js'></script>
+    <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/2.5.0/wilddog.js'></script>
+    <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/0.5.6/wilddog-video.js'></script>
+    <!-- <script type="text/javascript" src='./wilddog-web-all.js'></script>
+    <script type="text/javascript" src='./wilddog-video.js'></script> -->
     <script type="text/javascript">
     //获取所使用到的所有元素
     var roomIdEl = document.getElementById('roomId');
@@ -29,6 +36,7 @@
     var loginDiv = document.getElementById('getAppid-div');
     var appidEl = document.getElementById('appId');
     var joinBtn = document.getElementById('join');
+    var pIdEl = document.getElementById('pId');
     var localStream = null;
     var roomId = null;
     var currentConference = null;
@@ -45,6 +53,7 @@
         var videoInstance = wilddog.video();
         wilddog.auth().signInAnonymously()
             .then(function(user) {
+                alert('登录成功！请输入房间号加入视频会议！');
                 videoInstance.createStream({
                         audio: true,
                         video: 'low'
@@ -57,7 +66,6 @@
                         console.error(err);
                     });
                 clientInstance = videoInstance.client();
-                alert('登录成功！请输入房间号加入视频会议！');
                 joinBtn.disabled = false;
             })
             .catch(function(err) {
@@ -77,6 +85,7 @@
                 return;
             }
             //匿名登录成功了
+            console.log(user.uid);
             loginDiv.hidden = true;
             videosEl.hidden = false;
             //Client初始化操作，执行必须在匿名登录之后进行，client的其他函数必须在init成功后才可调用
@@ -97,9 +106,49 @@
                 if (participant.stream)
                     participant.stream.detach(removeEl);
                 videosEl.removeChild(removeEl);
+            });
+            currentConference.meetingCast.onStateChanged(function(meetingCast){
+                console.log('meetingCast status changed:');
+                console.log('isStarted:', meetingCast.isStarted);
+                console.log('anchor:', meetingCast.anchor);
+                if (meetingCast.play) {
+                    console.log('play address: rtmp:', meetingCast.play.rtmp, ' hls:', meetingCast.play.hls);
+                }
             })
         })
-    }
+    };
+
+    var start = function () {
+        var participantId = pIdEl.value;
+        currentConference.meetingCast.start(participantId)
+            .then(function(){
+                console.log('成功开启直播！');
+            })
+            .catch(function(err){
+                console.error("Catch error! Error code is " + err);
+            })
+    };
+
+    var switchParticipant = function () {
+        var participantId = pIdEl.value;
+        currentConference.meetingCast.switchParticipant(participantId)
+            .then(function(){
+                console.log('切换直播者成功！');
+            })
+            .catch(function(err){
+                console.error("Catch error! Error code is " + err);
+            })
+    };
+
+    var stop = function () {
+        currentConference.meetingCast.stop()
+            .then(function(){
+                console.log('关闭直播成功！');
+            })
+            .catch(function(err){
+                console.error("Catch error! Error code is " + err);
+            })
+    };
     </script>
 </body>
 
