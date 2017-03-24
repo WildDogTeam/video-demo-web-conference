@@ -67,7 +67,7 @@
                     });
                 clientInstance = videoInstance.client();
 		clientInstance.on('error',function(error){
-		    alert(error.message);
+		    alert('Client初始化失败，video功能未开启、服务已停用或认证失败。');
 		})
                 joinBtn.disabled = false;
             })
