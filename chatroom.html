@@ -66,9 +66,9 @@
                         console.error(err);
                     });
                 clientInstance = videoInstance.client();
-		clientInstance.on('error',function(error){
-		    alert('Client初始化失败，video功能未开启、服务已停用或认证失败。');
-		})
+            		clientInstance.on('error',function(error){
+            		    alert('Client初始化失败，video功能未开启、服务已停用或认证失败。');
+            		})
                 joinBtn.disabled = false;
             })
             .catch(function(err) {
@@ -110,6 +110,9 @@
                     participant.stream.detach(removeEl);
                 videosEl.removeChild(removeEl);
             });
+            currentConference.on('connect_failed', function () {
+                alert('连接服务器失败或 conference 开关未开启！请刷新页面重新进入！');
+            })
             currentConference.meetingCast.onStateChanged(function(meetingCast){
                 console.log('meetingCast status changed:');
                 console.log('isStarted:', meetingCast.isStarted);
