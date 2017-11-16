@@ -14,7 +14,8 @@
     <div id="videos" style="text-align:center;margin:0px auto;margin-top:60px;width:1080px" hidden="">
         <div>
             <button id="stop" onclick="disconnect()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer">离开会议</button>
-
+            <button id="stop" onclick="end()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer">停止会议</button>
+            
         
         </div>
         
@@ -92,6 +93,7 @@
         roomInstance.disconnect();
         this.location.href = 'https://localhost:8080';
     };
+
     //加入房间
     var joinRoom = function(uid) {
         //拿到房间号
@@ -171,6 +173,9 @@
     function fly(uid){
         wilddog.sync().ref("demovideo-command").child(roomId).push({time:Date.now(),command:"fly",uid:uid})
     }
+    function end(){
+        wilddog.sync().ref("demovideo-command").child(roomId).push({time:Date.now(),command:"end"})
+    }
     //监听自己是否被踢出
     function listenFly(){
         wilddog.sync().ref("demovideo-command").child(roomId).limitToLast(1).on('child_added',function(snapshot){
@@ -178,6 +183,9 @@
             if(v != null){
                 var command = v.command
                 var uid = v.uid
+                if(command=="end"){
+                    disconnect()
+                }
                 if(uid == myId){
                     snapshot.ref().remove()
                     if(command=='fly'){
