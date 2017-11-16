@@ -30,6 +30,8 @@
 
 ### 3. 开启实时视频通话
 
+请在代码中手动配置videoAppId 与 AppId
+
 进入 管理应用-实时视频通话，开启视频通话功能。此处注意记下配置页面的`VideoAppID`
 
 <img src="/images/video_quickstart_openVideo.png" alt="video_quickstart_openVideo">
