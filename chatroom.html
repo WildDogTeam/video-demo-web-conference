@@ -8,17 +8,31 @@
 <body style="background:#333;color:#fff;text-align: center;">
     <div style="text-align:center;font-size:50px;margin-top:50px;">WilddogRoom demo</div>
     <div id="getAppid-div" style="text-align:center;margin-top:150px;">
-        <input id="appId" type="" style="width:200px;height:35px;" name="" placeholder='请输入appId'>
-        <button id="login" onclick="login()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer">匿名登录</button>
         <input id="roomId" type="" style="width:200px;height:35px;" name="" placeholder='请输入房间号'>
-        <button id="join" onclick="join()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer" disabled="true">进入</button>
+        <button id="join" onclick="join()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer" >进入</button>
     </div>
     <div id="videos" style="text-align:center;margin:0px auto;margin-top:60px;width:1080px" hidden="">
         <div>
             <button id="stop" onclick="disconnect()" style="height:35px;width:70px;border: 1px solid;border-radius: 3px;cursor:pointer">离开会议</button>
+
+        
         </div>
-        <video id="local" width=480px height=360px style="border:1px solid;margin-right:20px;margin-left:20px;margin-top:20px;" muted="" autoplay="" controls></video>
+        
+            <video id="local" width=480px height=360px style="border:1px solid;margin-right:20px;margin-left:20px;margin-top:20px;" muted="" autoplay="" controls></video>
+            
+        
         <video id="remote" width=480px height=360px style="border:1px solid;margin-right:20px;margin-left:20px;margin-top:20px;" autoplay="" hidden controls></video>
+    </div>
+    <div>
+        <div id="users" style="margin:0 auto;margin-top:40px;width:300px;">
+            <div style="margin:0 auto;text-align:center;font-size:20px;margin-bottom:30px;">当前room中的用户</div>
+            <div id="user-list" style="border:1px solid;float:left;width:100%;min-height:200px;">
+                <div id="user-model" style="background-color:white; color: black; width:280px;height:30px;border:1px solid;margin:10px;float:left;" hidden="">
+                    <span class="remoteuid"></span>
+                    <button style="margin-top: 3px;border: 1px solid;border-radius: 3px;cursor:pointer " onclick="fly(this.parentElement.id)">踢出</button>
+                </div>
+            </div>
+        </div>
     </div>
     <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/2.5.6/wilddog.js'></script>
     <script type="text/javascript" src='https://cdn.wilddog.com/sdk/js/2.2.2/wilddog-video-room.js'></script>
@@ -29,24 +43,31 @@
     var videosEl = document.getElementById('videos');
     var localEl = document.getElementById('local');
     var loginDiv = document.getElementById('getAppid-div');
-    var appidEl = document.getElementById('appId');
+    //var appidEl = document.getElementById('appId');
     var joinBtn = document.getElementById('join');
     var remoteEl = document.getElementById('remote');
+    var userModel = document.getElementById('user-model');
+    var userList = document.getElementById('user-list');
+    var myId = null
     var localStream = null;
     var roomId = null;
     var currentConference = null;
     var roomInstance = null;
-
-    var login = function functionName() {
-        var config = {
-            authDomain: appidEl.value + '.wilddog.com'
+    var config = {
+        appId:"test123",
+        videoId:"wd5467378923sxrfcp"
+    }
+    var join = function functionName() {
+        var wdconfig = {
+            authDomain: config.appId+".wilddog.com",
+            syncURL:"https://"+config.appId+".wilddogio.com"
         };
-        wilddog.initializeApp(config);
+        wilddog.initializeApp(wdconfig);
 
         wilddog.auth().signInAnonymously().then(function(user) {
-            alert('登录成功！请输入房间号加入视频会议！');
+            myId = user.uid
             //通过wilddogVideo初始化 WilddogRoom SDK
-            wilddogVideo.initialize({'appId': appidEl.value, 'token': user.getToken()});
+            wilddogVideo.initialize({'appId': config.videoId, 'token': user.getToken()});
             //通过wilddogVideo创建本地媒体流
             wilddogVideo.createLocalStream({
                 captureVideo: true,
@@ -56,10 +77,12 @@
             }).then(function (wdStream) {
                 localStream = wdStream;
                 localStream.attach(localEl);
+                joinRoom(user.uid)
+
             }).catch(function (err) {
                 console.error(err);
             });
-            joinBtn.disabled = false;
+
         }).catch(function(err) {
             console.log(err);
             console.error('请检查appId是否正确并开启匿名登录功能！');
@@ -70,7 +93,7 @@
         this.location.href = 'https://localhost:8080';
     };
     //加入房间
-    var join = function() {
+    var joinRoom = function(uid) {
         //拿到房间号
         roomId = roomIdEl.value;
         //通过wilddogRoom创建WilddogRoom实例
@@ -84,7 +107,18 @@
         //room事件
         roomInstance.on('connected',function () {
             console.log('connected success');
+            //更新在线用户列表
+            wilddog.sync().ref("demovideo").child(roomId).child(uid).set(true)
+            wilddog.sync().ref("demovideo").child(roomId).child(uid).onDisconnect().set(null)
+            wilddog.sync().ref("demovideo").child(roomId).on('child_added',function(snapshot){
+                addUserToList(snapshot.key())
+            })
+            wilddog.sync().ref("demovideo").child(roomId).on('child_removed',function(snapshot){
+                removeUserFromList(snapshot.key())
+            })
+            listenFly()
             //发布本地流
+
             roomInstance.publish(localStream,function(error){
                 if(error == null){
                     console.log('publish success');
@@ -121,6 +155,38 @@
             })
         });
     };
+    function addUserToList(uid){
+        var newUser = userModel.cloneNode(true);
+        newUser.id = uid;
+        newUser.children[0].textContent = uid;
+        newUser.hidden = false;
+        userList.appendChild(newUser);
+    }
+    function removeUserFromList(uid){
+        var removeEl = document.getElementById(uid);
+        if(removeEl!=null)
+            userList.removeChild(removeEl);
+    }
+    //踢人
+    function fly(uid){
+        wilddog.sync().ref("demovideo-command").child(roomId).push({time:Date.now(),command:"fly",uid:uid})
+    }
+    //监听自己是否被踢出
+    function listenFly(){
+        wilddog.sync().ref("demovideo-command").child(roomId).limitToLast(1).on('child_added',function(snapshot){
+            var v = snapshot.val()
+            if(v != null){
+                var command = v.command
+                var uid = v.uid
+                if(uid == myId){
+                    snapshot.ref().remove()
+                    if(command=='fly'){
+                        disconnect()
+                    }
+                }
+            }
+        })
+    }
     </script>
 </body>
 
